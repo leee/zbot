@@ -1,3 +1,4 @@
+import datetime
 import logging
 import moira
 import os
@@ -13,7 +14,7 @@ import zephyr
 
 SHUTDOWN = False
 
-classes = ['leee', 'leee-test']
+classes = ['leee', 'leee-test', 'pranjal']
 
 kprinc = "daemon/leee.mit.edu"
 krealm = "ATHENA.MIT.EDU"
@@ -40,7 +41,7 @@ def module_fmk(option, z, listname):
     try:
         moira.connect()
         mem = moira.query('get_end_members_of_list', listname)
-        mem = [d for d in mem if d.get('member_type') == 'USER']
+        mem = [d for d in mem if d.get('member_type') in ['USER']]
         if len(mem) < 3:
             zreply(z, "Not enough USERs on LIST " + listname)
         else:
@@ -57,6 +58,29 @@ def module_fmk(option, z, listname):
         elif e.code == moira.errors()['MR_PERM']:
             zreply(z, "Insufficient permission for lIST " + listname)
 
+def module_hunt(options, z):
+    tn = time.time()
+    ts = time.mktime(datetime.datetime(2017, 1, 13, 12, 0, 0).timetuple())
+    td = ts - tn
+    ta = abs(td)
+    m, s = divmod(ta, 60)
+    h, m = divmod(m, 60)
+    d, h = divmod(h, 24)
+    s = str(int(s))
+    m = str(int(m))
+    h = str(int(h))
+    d = str(int(d))
+    if options == "q":
+        if td > 0:
+            zreply(z, "NO! " + d + " days, " + h + " hours, " + m + " minutes, and " + s + " seconds until hunt.")
+        else:
+            zreply(z, "YES! " + d + " days, " + h + " hours, " + m + " minutes, and " + s + " seconds has elapsed.")
+    else:
+        if td > 0:
+            zreply(z, d + " days, " + h + " hours, " + m + " minutes, and " + s + " seconds until hunt.")
+        else:
+            zreply(z, "HUNT HUNT HUNT HUNT! " + d + " days, " + h + " hours, " + m + " minutes, and " + s + " seconds has elapsed.")
+
 def magic_word(z, word):
     return z.fields[1].startswith(word)
 
@@ -68,11 +92,15 @@ def tool():
             except Queue.Empty:
                 break
             if z.opcode.lower() not in ('ping', 'auto'):
-                query = z.fields[1].split()
+                query = z.fields[1].lower().split()
                 if query[0] == "hpt" and len(query) == 2:
                     module_fmk("hpt", z, query[1])
                 if query[0] == "fmk" and len(query) == 2:
                     module_fmk("fmk", z, query[1])
+                if query[0] == "hunt" and query[1:] == query[:-1]:
+                    module_hunt("", z)
+                if query == ["is", "it", "hunt", "yet"]:
+                    module_hunt("q", z)
 
 def zephyr_send():
     while not SHUTDOWN:
