@@ -14,7 +14,7 @@ import zephyr
 
 SHUTDOWN = False
 
-classes = ['leee', 'leee-test', 'pranjal']
+classes = ['cela', 'hpt', 'leee', 'leee-test', 'pranjal']
 
 kprinc = "daemon/leee.mit.edu"
 krealm = "ATHENA.MIT.EDU"
@@ -41,16 +41,16 @@ def module_fmk(option, z, listname):
     try:
         moira.connect()
         mem = moira.query('get_end_members_of_list', listname)
-        mem = [d for d in mem if d.get('member_type') in ['USER']]
+        mem = [d for d in mem if d.get('member_type') in ['USER', 'LIST', 'KERBEROS', 'STRING', 'MACHINE']]
         if len(mem) < 3:
-            zreply(z, "Not enough USERs on LIST " + listname)
+            zreply(z, "Not enough members on LIST " + listname)
         else:
             if option == "fmk":
                 body = ["Who would you fuck, marry, kill?"]
             elif option == "hpt":
                 body = ["Who would you hack, punt, tool with?"]
             for d in random.sample(mem, 3):
-                body.append("- " + d.get('member_name'))
+                body.append("- " + d.get('member_type') + " " + d.get('member_name'))
             zreply(z, "\n".join(body))
     except moira.MoiraException as e:
         if e.code == moira.errors()['MR_LIST']:
@@ -97,6 +97,10 @@ def tool():
                     module_fmk("hpt", z, query[1])
                 if query[0] == "fmk" and len(query) == 2:
                     module_fmk("fmk", z, query[1])
+                if query[1] == "hpt" and len(query) == 3:
+                    module_fmk("hpt", z, query[2])
+                if query[1] == "fmk" and len(query) == 3:
+                    module_fmk("fmk", z, query[2])
                 if query[0] == "hunt" and query[1:] == query[:-1]:
                     module_hunt("", z)
                 if query == ["is", "it", "hunt", "yet"]:
